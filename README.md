@@ -1,0 +1,2 @@
+# Neural_Net
+For this part of the assignment, The code to trains and tests a single-layer neural network using backpropagation. The code is intended for binary classification problems. All of the attributes are assumed to be numeric.  For training the neural network, use n-fold stratified cross validation (using sigmoid activation function).  The program should be callable from command line as follows:  neuralnet trainfile num_folds learning_rate num_epochs . Output is of the following format : fold_of_instance predicted_class actual_class confidence_of_prediction 
