@@ -1,4 +1,3 @@
-__author__ = 'mushahidalam'
 import random
 import math
 import time
@@ -9,13 +8,13 @@ class neural_net():
     data = []
     fold_info = {}
     index_info={}
-
+    
     def __init__(self):
         self.epochs = 0
         self.learningRate = 0
         self.bias = 0.1
         self.counter=0
-
+    
     def calculateSigmoid(self, z):
         if(z<-100):
             return 1
@@ -23,11 +22,11 @@ class neural_net():
             return 1.0/(1.0+math.exp(-z))
         except:
             5
-
+    
     def setWeightsAndBiases(self, lengthOfInstance):
         self.weights= [0.1]*(len(attributeList)-1)
         self.bias = 0.1
-
+    
     def convertClassificationToNumeric(self, dataSet):
         positiveClass = attributeList[-1].values[-1]
         negativeClass = attributeList[-1].values[0]
@@ -35,30 +34,30 @@ class neural_net():
         while(index<len(dataSet)):
             if(dataSet[index][-1] == positiveClass):
                 dataSet[index][-1] = 1
-            else :
+            else : 
                 dataSet[index][-1] = 0
             index+=1
         return dataSet
-
+    
     def setData(self, dataSet):
         self.data = dataSet
-
+        
     def setEpoch(self, e):
         self.epochs = e
-
+        
     def setLearningRate(self,l):
         self.learningRate = l
-
+        
     def setFolds(self,n):
         self.fold = n
-
+        
     def initializeNeuralNetObject(self, n,l,e,data):
         self.setWeightsAndBiases("")
         self.setData(self.convertClassificationToNumeric(data))
         self.setEpoch(e)
         self.setLearningRate(l)
         self.setFolds(n)
-
+        
     def divideOnClassifications(self, dataSet):
         finalLists = list()
         list1 = []
@@ -79,10 +78,10 @@ class neural_net():
         finalLists.append(list1)
         if(len(list2)==0):
             return finalLists
-        else :
+        else : 
             finalLists.append(list2)
             return finalLists
-
+        
     def stratifiedSampler(self):
         dividedList = self.divideOnClassifications(self.data)
         if(len(dividedList) == 1):
@@ -96,7 +95,7 @@ class neural_net():
             lengthOfEachSample = float(len(self.data))/self.fold
             proportion1 = (float(len(dividedList[0]))/(len(self.data)))*lengthOfEachSample
             proportion2 = (float(len(dividedList[1]))/(len(self.data)))*lengthOfEachSample
-
+        
         count = 0
         listOfSamples = [[]]
         while(count<self.fold):
@@ -133,30 +132,30 @@ class neural_net():
                 self.fold_info[row[-1]] = iterator
                 if(self.index_info.has_key(iterator)):
                     self.index_info[iterator].append(row[-1])
-                else :
+                else : 
                     self.index_info[iterator] = [row[-1]]
                 row.pop(-1)
                 if(len(listOfSamples)-1<iterator):
                     listOfSamples.append([row])
-                else :
+                else : 
                     listOfSamples[iterator].append(row)
             if(len(dividedList[1])!=0):
                 row = dividedList[1].pop()
                 self.fold_info[row[-1]] = iterator
                 if(self.index_info.has_key(iterator)):
                     self.index_info[iterator].append(row[-1])
-                else :
+                else : 
                     self.index_info[iterator] = [row[-1]]
                 row.pop(-1)
                 if(len(listOfSamples)-1<iterator):
                     listOfSamples.append([row])
-                else :
+                else : 
                     listOfSamples[iterator].append(row)
             iterator = (iterator+1)%self.fold
         if(len(listOfSamples[0])==0):
             listOfSamples.pop(0)
         return listOfSamples
-
+    
     def computeOutputFromNetwork(self, instance): #TODO : Make sure the input is read as numeric in the list
         z = 0
         #z = np.dot(self.weights, output)+self.biases
@@ -167,10 +166,10 @@ class neural_net():
         z+=self.bias
         output = self.calculateSigmoid(z)
         return output
-
+    
     def calculateError(self, target_output, computed_output):
         return (float(math.pow((target_output-computed_output), 2)))/2
-
+    
     def calculateGradientAndUpdateWeights(self, e, instanceVector, y, o):
         index = 0
         deltaE = -1*(y-o)*o*(1-o)
@@ -180,15 +179,15 @@ class neural_net():
                     #deltaE *=x_i
                     self.weights[index]+=self.learningRate*deltaE*x_i*-1
                     self.counter+=1
-                else :
+                else : 
                     break
                 index+=1
             except :
                 5
         test = self.learningRate*deltaE*-1
         self.bias +=(self.learningRate*deltaE*-1)
-
-
+            
+    
     def stochasticGradientDescent(self, dataSet):
         passes = 0
         output = 0
@@ -199,7 +198,7 @@ class neural_net():
                 self.calculateGradientAndUpdateWeights(0, d, d[-1], output)
                 output = 0
             passes+=1
-
+        
 class Attribute:
     index = 0
     values = list()
@@ -246,7 +245,7 @@ def readArff(filename):
                 attr.setType("real")
                 attr.index = index
                 attributeList.append(attr)
-            else :
+            else : 
                 attr = Attribute()
                 attr.setName(attributeLineSplit[1].replace('\'',''))
                 attr.setType("class")
@@ -268,9 +267,14 @@ def main() :
     no_of_folds = int(sys.argv[2])
     learning_rate = float(sys.argv[3])
     epochs = int(sys.argv[4])
+    # trainingSet = "sonar.arff"
+    # no_of_folds = 10
+    # learning_rate = 0.1
+    # epochs = 100
     data = readArff(trainingSet)
     N.initializeNeuralNetObject(no_of_folds, learning_rate, epochs, data)
     samples = N.stratifiedSampler()
+    # print samples
     i = 0
     prediction_list=[0]*len(data)
     while(i<len(samples)):
@@ -318,8 +322,8 @@ def main() :
     accuracy = float(correctCount)/(correctCount+wrongCount)*100
 
 main()
-
-
-
-
-
+        
+        
+            
+        
+    
