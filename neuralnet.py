@@ -94,6 +94,7 @@ class neural_net():
             self.folds_list[i%self.folds].append(class2_list.pop(0))
         for i in range(0,len(self.folds_list)):
             print self.folds_list[i]
+
     def sigmod(self,ouput):
         return  1.0/(1.0+math.exp(ouput))
 
@@ -104,10 +105,18 @@ class neural_net():
         result += self.biaz
         return self.sigmod(result)
 
+    def update_weights(self, vector, net_output, expected_output ):
+        delta_j = net_output*(1-net_output)(expected_output-net_output)
+        for i in range(len(vector)-1):
+            self.weights[i]+=self.learning_rate*delta_j*vector[i]
+        self.biaz+=self.learning_rate*delta_j*-1
+
     def online_learning(self, input_vectors):
+        for pass_count in range(self.epochs):
+            for vector in input_vectors:
+                net_output = neural_net.networkcompute()
+                neural_net.update_weights(vector, net_output, vector[-1])
 
-
-        output = neural_net
 
 
 
