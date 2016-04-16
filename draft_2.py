@@ -54,7 +54,7 @@ def ConstructNeuralNetworkSGD(learning_rate, epoch, dataset, fold, flag):
     global SGD
     global W
     global parent_training_dataset
-
+    print len(dataset)
     if (flag == "train"):
         for index in range(len(dataset[0])-1): #W will have as many entries as the number of attributes
             W.append(0.1)
@@ -69,7 +69,7 @@ def ConstructNeuralNetworkSGD(learning_rate, epoch, dataset, fold, flag):
                     y = 0
                 x_attributes = row[0 : -1]
                 net_value = W0 + sum_attr(W, x_attributes)
-                print net_value
+                # print net_value
 		activation_value = 1.0 / ( 1 + math.exp(-net_value))
                 #error = 0.5*math.pow((y-activation_value),2)
                 for index in range(len(x_attributes)): #Updating SGD and weights
@@ -106,7 +106,7 @@ def ConstructNeuralNetworkSGD(learning_rate, epoch, dataset, fold, flag):
                     else:
                         inaccurate += 1
         percentage_accuracy = (accurate*100.0)/(accurate+inaccurate)
-        #print "Percentage Accuracy: " + str(percentage_accuracy) + "\nAccurate: " + str(accurate) + " Innacurate: " + str(inaccurate)
+        print "Percentage Accuracy: " + str(percentage_accuracy) + "\nAccurate: " + str(accurate) + " Innacurate: " + str(inaccurate)
         return percentage_accuracy
 
 def  stratified_cross_validation(parent_training_dataset, n, learning_rate, epoch):
@@ -155,7 +155,7 @@ def  stratified_cross_validation(parent_training_dataset, n, learning_rate, epoc
         stratified_sample.insert(0, testing_dataset)
         ConstructNeuralNetworkSGD(learning_rate, epoch, training_dataset, "", "train") #testing
         sum += ConstructNeuralNetworkSGD(learning_rate, epoch, testing_dataset, i+1, "test") #training
-    #print sum/n
+    print sum/n
 
 def plot_roc_curve(list_for_roc):
     TP = 0
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     # learning_rate = float(sys.argv[3])
     learning_rate = 0.1
     # epoch = int(sys.argv[4])
-    epoch = 25
+    epoch = 50
 
 
     file_txt = open(train_file_name)
@@ -229,9 +229,10 @@ if __name__ == '__main__':
         ConstructNeuralNetworkSGD(learning_rate, epoch, parent_training_dataset, n, "train") #testing
         ConstructNeuralNetworkSGD(learning_rate, epoch, testing_dataset, n, "test") #training
     else :
+        print "going here "
         #Stratified Cross Validation
         stratified_cross_validation(parent_training_dataset, n, learning_rate, epoch)
-    '''
+
     #Output of Program
     #row = [fold, predicted class, actual class, activation/confidence value]
     print_output = output
@@ -263,4 +264,4 @@ if __name__ == '__main__':
         #y.append(row[1])
     #print x
     #print y
-    '''
+

@@ -324,6 +324,7 @@ def main() :
         print " Confidence: "+str(prediction)
         z+=1
     accuracy = float(correctCount)/(correctCount+wrongCount)*100
+    print accuracy
 
 main()
         

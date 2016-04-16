@@ -120,7 +120,7 @@ class neural_net():
         result  = 0
         for i in range(len(self.weights)):
             result += (self.weights[i]*1.0) * (input_vector[i]*1.0)
-        result += self.biaz
+        result += self.biaz * 1.0
         return self.sigmod(result)
 
     def update_weights(self, vector, net_output, expected_output ):
@@ -129,28 +129,33 @@ class neural_net():
             expected_output = float(0)
         else:
             expected_output = float(1)
+        # print expected_output
         delta_j = net_output*(1-net_output)*(expected_output-net_output)
         for i in range(len(vector)-1):
             self.weights[i]+=self.learning_rate*delta_j*vector[i]
-        self.biaz+=self.learning_rate*delta_j*-1
+        self.biaz+=self.learning_rate*delta_j*1.0
 
     def online_learning(self):
         global network
+        acc_data =[]
         #train for the number of epochs
+        for i in range(len(self.folds_list)):
+            random.shuffle(self.folds_list[i])
         for pass_count in range(self.folds-1,-1,-1):
             train_data = []
             test_data = []
-            # self.weights = [0.1] * (attributeCounter-1)
+            self.weights = [0.1] * (attributeCounter-1)
+            self.biaz = 0.1
+
             for i in range(self.folds):
                 if i!=pass_count:
-                    random.shuffle(self.folds_list[i])
                     for k in range(0,len(self.folds_list[i])):
                         train_data.append(self.folds_list[i][k])
                 else:
                     for k in range(0,len(self.folds_list[i])):
                         test_data.append(self.folds_list[i][k])
-            # random.shuffle(train_data)
             for m in range(self.epochs):
+                random.shuffle(train_data)
                 for vector in train_data:
                     net_output = network.networkcompute(vector)
                     network.update_weights(vector, net_output, vector[-1])
@@ -158,18 +163,26 @@ class neural_net():
             total =0
             for vector in test_data:
                 total+=1
-                net_output = network.networkcompute(vector)
-                print("%.12f"%net_output)
-                if net_output < 0.5:
+                confidence_of_prediction = network.networkcompute(vector)
+                # print "%.12f"%net_output,
+                if confidence_of_prediction < 0.5:
                     net_output = 'Rock'
                 else:
                     net_output = 'Mine'
                 if vector[-1]==net_output:
+                    # print("correct expected",vector[-1],"predicted "+net_output)
                     correct+=1
-                print("expected",vector[-1],"predicted "+net_output)
+                # print self.folds-pass_count,net_output,vector[-1],confidence_of_prediction
+                # print "%s;%s" %(pass_count, net_output)
             accuracy = float(correct)/total
-            print("==========")
+            # print("==========")
             print "accuracy =" ,accuracy
+            acc_data.append(accuracy)
+        average = 0
+        for acc in acc_data:
+            average+=acc
+        average=average/self.folds
+        print average
 
 
 
@@ -185,9 +198,10 @@ def main(args):
     # num_epochs = sys.argv[4]
     global network
     train_file = "sonar.arff"
-    folds = 25
+    folds = 5
     learning_rate = 0.1
     num_epochs = 50
+
     InputParse(train_file)
     network = neural_net(folds, 0.1, learning_rate, num_epochs)
     network.stratified_sampling()
