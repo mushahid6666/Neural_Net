@@ -263,10 +263,14 @@ def readArff(filename):
 
 def main() :
     N = neural_net()
-    trainingSet = sys.argv[1]
-    no_of_folds = int(sys.argv[2])
-    learning_rate = float(sys.argv[3])
-    epochs = int(sys.argv[4])
+    # trainingSet = sys.argv[1]
+    trainingSet = "sonar.arff"
+    # no_of_folds = int(sys.argv[2])
+    no_of_folds = 10
+    # learning_rate = float(sys.argv[3])
+    learning_rate = 0.1
+    # epochs = int(sys.argv[4])
+    epochs = 100
     # trainingSet = "sonar.arff"
     # no_of_folds = 10
     # learning_rate = 0.1

@@ -2,10 +2,11 @@ __author__ = 'mushahidalam'
 import sys
 import re
 import math
+import random
 Attr_data = []
 TrainDataSet = []
 attributeCounter = 0
-
+network = None
 
 class Attribute():
     name = ''
@@ -72,7 +73,7 @@ class neural_net():
     folds_list = [[]]
 
     def __init__(self, fold, weight, learninrate, epoch):
-        self.weights = [weight] * attributeCounter
+        self.weights = [weight] * (attributeCounter-1)
         self.learning_rate = learninrate
         self.biaz = weight
         self.epochs = epoch
@@ -88,12 +89,29 @@ class neural_net():
                 class1_list.append(instance)
             else:
                 class2_list.append(instance)
+        # print("class1 = ",len(class1_list),"class2 = ",len(class1_list),self.folds)
+        random.shuffle(class1_list)
+        random.shuffle(class2_list)
         for i in range(len(class1_list)):
+            # print(class1_list[0],i%self.folds)
             self.folds_list[i%self.folds].append(class1_list.pop(0))
         for i in range(len(class2_list)):
+            # print(class2_list[0],i%self.folds)
             self.folds_list[i%self.folds].append(class2_list.pop(0))
-        for i in range(0,len(self.folds_list)):
-            print self.folds_list[i]
+        pass
+
+        #Code to check the random shuffling
+        # for i in range(0,len(self.folds_list)):
+        #     rock_count = 0
+        #     mine_count = 0
+        #     for k in range(len(self.folds_list[i])):
+        #         print self.folds_list[i][k]
+        #         if self.folds_list[i][k][-1]=='Rock':
+        #             rock_count+=1
+        #         else:
+        #             mine_count+=1
+        #     print(rock_count,mine_count)
+
 
     def sigmod(self,ouput):
         return  1.0/(1.0+math.exp(ouput))
@@ -106,16 +124,44 @@ class neural_net():
         return self.sigmod(result)
 
     def update_weights(self, vector, net_output, expected_output ):
-        delta_j = net_output*(1-net_output)(expected_output-net_output)
+
+        if expected_output == Attr_data[-1].values[0]:
+            expected_output = float(0)
+        else:
+            expected_output = float(1)
+        delta_j = net_output*(1-net_output)*(expected_output-net_output)
         for i in range(len(vector)-1):
             self.weights[i]+=self.learning_rate*delta_j*vector[i]
         self.biaz+=self.learning_rate*delta_j*-1
 
-    def online_learning(self, input_vectors):
-        for pass_count in range(self.epochs):
-            for vector in input_vectors:
-                net_output = neural_net.networkcompute()
-                neural_net.update_weights(vector, net_output, vector[-1])
+    def online_learning(self):
+        global network
+        #train for the number of epochs
+        for pass_count in range(self.folds-1,-1,-1):
+            train_data = []
+            test_data = []
+
+            for i in range(self.folds):
+                if i!=pass_count:
+                    for k in range(0,len(self.folds_list[i])):
+                        train_data.append(self.folds_list[i][k])
+                else:
+                    for k in range(0,len(self.folds_list[i])):
+                        test_data.append(self.folds_list[i][k])
+            for vector in train_data:
+                net_output = network.networkcompute(vector)
+                network.update_weights(vector, net_output, vector[-1])
+            for vector in test_data:
+                net_output = network.networkcompute(vector)
+                print(net_output)
+                if net_output < 0.5:
+                    net_output = 'Rock'
+                else:
+                    net_output = 'Mine'
+                print("expected",vector[-1],"predicted",net_output)
+            print("==========")
+
+
 
 
 
@@ -127,11 +173,11 @@ def main(args):
     # folds = sys.argv[2]
     # learning_rate = sys.argv[3]
     # num_epochs = sys.argv[4]
-
+    global network
     train_file = "sonar.arff"
     folds = 10
     learning_rate = 0.1
-    num_epochs = 100
+    num_epochs = 25
     InputParse(train_file)
     network = neural_net(folds, 0.1, learning_rate, num_epochs)
     network.stratified_sampling()
