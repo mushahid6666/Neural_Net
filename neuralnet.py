@@ -113,13 +113,13 @@ class neural_net():
         #     print(rock_count,mine_count)
 
 
-    def sigmod(self,ouput):
-        return  1.0/(1.0+math.exp(ouput))
+    def sigmod(self,output):
+        return  1.0/(1.0+math.exp(-output))
 
     def networkcompute(self, input_vector):
         result  = 0
         for i in range(len(self.weights)):
-            result += self.weights[i] * input_vector[i]
+            result += (self.weights[i]*1.0) * (input_vector[i]*1.0)
         result += self.biaz
         return self.sigmod(result)
 
@@ -140,26 +140,36 @@ class neural_net():
         for pass_count in range(self.folds-1,-1,-1):
             train_data = []
             test_data = []
-
+            # self.weights = [0.1] * (attributeCounter-1)
             for i in range(self.folds):
                 if i!=pass_count:
+                    random.shuffle(self.folds_list[i])
                     for k in range(0,len(self.folds_list[i])):
                         train_data.append(self.folds_list[i][k])
                 else:
                     for k in range(0,len(self.folds_list[i])):
                         test_data.append(self.folds_list[i][k])
-            for vector in train_data:
-                net_output = network.networkcompute(vector)
-                network.update_weights(vector, net_output, vector[-1])
+            # random.shuffle(train_data)
+            for m in range(self.epochs):
+                for vector in train_data:
+                    net_output = network.networkcompute(vector)
+                    network.update_weights(vector, net_output, vector[-1])
+            correct = 0
+            total =0
             for vector in test_data:
+                total+=1
                 net_output = network.networkcompute(vector)
-                print(net_output)
+                print("%.12f"%net_output)
                 if net_output < 0.5:
                     net_output = 'Rock'
                 else:
                     net_output = 'Mine'
-                print("expected",vector[-1],"predicted",net_output)
+                if vector[-1]==net_output:
+                    correct+=1
+                print("expected",vector[-1],"predicted "+net_output)
+            accuracy = float(correct)/total
             print("==========")
+            print "accuracy =" ,accuracy
 
 
 
@@ -175,9 +185,9 @@ def main(args):
     # num_epochs = sys.argv[4]
     global network
     train_file = "sonar.arff"
-    folds = 10
+    folds = 25
     learning_rate = 0.1
-    num_epochs = 25
+    num_epochs = 50
     InputParse(train_file)
     network = neural_net(folds, 0.1, learning_rate, num_epochs)
     network.stratified_sampling()
