@@ -5,6 +5,7 @@ import math
 import random
 Attr_data = []
 TrainDataSet = []
+confidence = []
 attributeCounter = 0
 network = None
 
@@ -137,10 +138,33 @@ class neural_net():
 
     def online_learning(self):
         global network
+        global TrainDataSet
+        global confidence
         acc_data =[]
         #train for the number of epochs
         for i in range(len(self.folds_list)):
             random.shuffle(self.folds_list[i])
+        # TPR = TP/(TP+FN)
+        #FPR = FP/(TN+FP)
+        TPR = 0.0
+        FPR = 0.0
+        TP=0.0
+        TN=0.0
+        FP=0.0
+        FN=0.0
+        actual_postive = 0
+        actual_negative = 0
+        for data_set in self.folds_list:
+            for fold_data in data_set:
+                if fold_data[-1]=='Mine':
+                    actual_postive +=1.0
+                else:
+                    actual_negative+=1.0
+
+        confidence_list = []
+        ROC_points = []
+
+        correct_classified = 0
         for pass_count in range(self.folds-1,-1,-1):
             train_data = []
             test_data = []
@@ -166,48 +190,68 @@ class neural_net():
                 confidence_of_prediction = network.networkcompute(vector)
                 # print "%.12f"%net_output,
                 if confidence_of_prediction < 0.5:
-                    net_output = 'Rock'
+                    net_output = Attr_data[-1].values[0]
                 else:
-                    net_output = 'Mine'
+                    net_output = Attr_data[-1].values[1]
+
+
                 if vector[-1]==net_output:
                     # print("correct expected",vector[-1],"predicted "+net_output)
                     correct+=1
-                # print self.folds-pass_count,net_output,vector[-1],confidence_of_prediction
+                    correct_classified+=1
+                # print self.folds-pass_count,net_output,vector[-1],confidence_of_prediction,vector
                 # print "%s;%s" %(pass_count, net_output)
+                confi_index = TrainDataSet.index(vector)
+                # print(confi_index)
+                confidence[confi_index] = [self.folds-pass_count,net_output,vector[-1],confidence_of_prediction]
+                confidence_list.append([vector[-1],net_output,confidence_of_prediction])
             accuracy = float(correct)/total
             # print("==========")
-            print "accuracy =" ,accuracy
+            # print "accuracy =" ,accuracy
             acc_data.append(accuracy)
+        for instance in confidence:
+            print instance[0],instance[1],instance[2],instance[3]
+        confidence_list = sorted(confidence_list,key=lambda x: float(x[2]),reverse=1)
+        #calculate TPR, FPR
+        for entry in confidence_list:
+            #ROC Curve Calculations
+            if entry[0] == Attr_data[-1].values[1]:
+                TP+=1.0
+            elif entry[0] == Attr_data[-1].values[0]:
+                FP+=1.0
+            TPR = TP/actual_postive
+            FPR = FP/actual_negative
+            ROC_points.append([TPR,FPR])
+
+        # print(ROC_points)
         average = 0
         for acc in acc_data:
             average+=acc
         average=average/self.folds
-        print average
+        # print average
 
 
 
 
 
 
-def main(args):
-    if len(sys.argv) > 4:
+if __name__=='__main__':
+    if len(sys.argv) > 5:
         print "ERROR: Input format: neuralnet trainfile num_folds learning_rate num_epochs "
-    # train_file = sys.argv[1]
-    # folds = sys.argv[2]
-    # learning_rate = sys.argv[3]
-    # num_epochs = sys.argv[4]
-    global network
+        exit(0)
+    train_file = sys.argv[1]
+    folds = sys.argv[2]
+    learning_rate = sys.argv[3]
+    num_epochs = sys.argv[4]
     train_file = "sonar.arff"
-    folds = 5
+    folds = 10
     learning_rate = 0.1
     num_epochs = 50
 
     InputParse(train_file)
     network = neural_net(folds, 0.1, learning_rate, num_epochs)
+    confidence = [0] * len(TrainDataSet)
     network.stratified_sampling()
     network.online_learning()
 
-main(None)
-
-# if __name__=='__main__':
-#     main(sys.argv)
+# main(None)

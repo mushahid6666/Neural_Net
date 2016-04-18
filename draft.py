@@ -1,13 +1,12 @@
 import random
+import numpy as np
 import math
-import time
-import sys
+from operator import itemgetter
 
 class neural_net():
     weights = []
     data = []
     fold_info = {}
-    index_info={}
     
     def __init__(self):
         self.epochs = 0
@@ -16,12 +15,7 @@ class neural_net():
         self.counter=0
     
     def calculateSigmoid(self, z):
-        if(z<-100):
-            return 1
-        try:
-            return 1.0/(1.0+math.exp(-z))
-        except:
-            5
+        return 1.0/(1.0+np.exp(-z))
     
     def setWeightsAndBiases(self, lengthOfInstance):
         self.weights= [0.1]*(len(attributeList)-1)
@@ -51,12 +45,13 @@ class neural_net():
     def setFolds(self,n):
         self.fold = n
         
-    def initializeNeuralNetObject(self, n,l,e,data):
+    def initializeNeuralNetObject(self, n,l,e,data,attributeList):
         self.setWeightsAndBiases("")
         self.setData(self.convertClassificationToNumeric(data))
         self.setEpoch(e)
         self.setLearningRate(l)
         self.setFolds(n)
+        self.attributeList = attributeList
         
     def divideOnClassifications(self, dataSet):
         finalLists = list()
@@ -64,7 +59,7 @@ class neural_net():
         list2 = []
         if(len(dataSet)==0):
             return finalLists
-        classification1 = dataSet[0][-1]
+        classification1 = 1
         classification2 = ""
         index_info = 0
         for d in dataSet :
@@ -85,75 +80,40 @@ class neural_net():
     def stratifiedSampler(self):
         dividedList = self.divideOnClassifications(self.data)
         if(len(dividedList) == 1):
-            if(self.fold>len(self.data)):
-                self.fold = len(self.data)
-            lengthOfEachSample = float(len(self.data))/self.fold
-            proportion1 = (float(len(dividedList[0]))/(len(self.data)))*lengthOfEachSample
-            proportion2 = 0
-            dividedList.append([])
-        else :
-            lengthOfEachSample = float(len(self.data))/self.fold
-            proportion1 = (float(len(dividedList[0]))/(len(self.data)))*lengthOfEachSample
-            proportion2 = (float(len(dividedList[1]))/(len(self.data)))*lengthOfEachSample
+            return self.data #TODO : Need to send 'fold' number of samples of the dataSet
+        lengthOfEachSample = float(len(self.data))/self.fold
+        
+        proportion1 = (float(len(dividedList[0]))/(len(self.data)))*lengthOfEachSample
+        proportion2 = (float(len(dividedList[1]))/(len(self.data)))*lengthOfEachSample
+        
         
         count = 0
-        listOfSamples = [[]]
+        listOfSamples = list()
         while(count<self.fold):
-            if(int(proportion1)==0 and int(proportion2)==0):
-                break
             s = list()
-            if(int(proportion1)!=0):
-                s+=[dividedList[0].pop(random.randrange(len(dividedList[0]))) for _ in xrange(int(proportion1))]
-            if(int(proportion2)!=0):
-                s+=[dividedList[1].pop(random.randrange(len(dividedList[1]))) for _ in xrange(int(proportion2))]
-            #s+=[dividedList[0].pop(random.randrange(len(dividedList[0]))) for _ in xrange(int(proportion1))]+[dividedList[1].pop(random.randrange(len(dividedList[1]))) for _ in xrange(int(proportion2))]
+            s+=[dividedList[0].pop(random.randrange(len(dividedList[0]))) for _ in xrange(int(proportion1))]+[dividedList[1].pop(random.randrange(len(dividedList[1]))) for _ in xrange(int(proportion2))]
             it = 0
-            if(len(s)==0):
-                count+=1
-                continue
             for d in s :
                 self.fold_info[d[-1]] = count
-                if(self.index_info.has_key(count)):
-                    self.index_info[count].append(d[-1])
-                else :
-                    self.index_info[count] = [d[-1]]
                 s[it].pop(-1)
                 it+=1
             listOfSamples.append(s)
             count+=1
         iterator = 0
-        if(len(listOfSamples)>1 and len(listOfSamples[0])==0):
-            listOfSamples.pop(0)
         while(iterator<self.fold):
             if(len(dividedList[0])==0 and len(dividedList[1])==0):
                 break
             if(len(dividedList[0])!=0):
                 row = dividedList[0].pop()
                 self.fold_info[row[-1]] = iterator
-                if(self.index_info.has_key(iterator)):
-                    self.index_info[iterator].append(row[-1])
-                else : 
-                    self.index_info[iterator] = [row[-1]]
                 row.pop(-1)
-                if(len(listOfSamples)-1<iterator):
-                    listOfSamples.append([row])
-                else : 
-                    listOfSamples[iterator].append(row)
+                listOfSamples[iterator].append(row)
             if(len(dividedList[1])!=0):
                 row = dividedList[1].pop()
                 self.fold_info[row[-1]] = iterator
-                if(self.index_info.has_key(iterator)):
-                    self.index_info[iterator].append(row[-1])
-                else : 
-                    self.index_info[iterator] = [row[-1]]
                 row.pop(-1)
-                if(len(listOfSamples)-1<iterator):
-                    listOfSamples.append([row])
-                else : 
-                    listOfSamples[iterator].append(row)
+                listOfSamples[iterator].append(row)
             iterator = (iterator+1)%self.fold
-        if(len(listOfSamples[0])==0):
-            listOfSamples.pop(0)
         return listOfSamples
     
     def computeOutputFromNetwork(self, instance): #TODO : Make sure the input is read as numeric in the list
@@ -184,7 +144,6 @@ class neural_net():
                 index+=1
             except :
                 5
-        test = self.learningRate*deltaE*-1
         self.bias +=(self.learningRate*deltaE*-1)
             
     
@@ -193,11 +152,18 @@ class neural_net():
         output = 0
         while(passes<self.epochs):
             for d in dataSet:
-                output = self.computeOutputFromNetwork(d)
-                #error = self.calculateError(d[-1], output) #TODO : map the second classification as 1 and the first one as 0
+                z = 0
+                index = 0
+                for w in self.weights :
+                    z+=d[index]*w
+                    index+=1
+                z+=self.bias
+                output = self.calculateSigmoid(z)
                 self.calculateGradientAndUpdateWeights(0, d, d[-1], output)
                 output = 0
             passes+=1
+        5
+        print self.weights
         
 class Attribute:
     index = 0
@@ -262,69 +228,101 @@ def readArff(filename):
     return data
 
 def main() :
+    global attributeList
+    data = readArff("sonar.arff")
     N = neural_net()
-    # trainingSet = sys.argv[1]
-    trainingSet = "sonar.arff"
-    # no_of_folds = int(sys.argv[2])
-    no_of_folds = 10
-    # learning_rate = float(sys.argv[3])
-    learning_rate = 0.1
-    # epochs = int(sys.argv[4])
-    epochs = 100
-    # trainingSet = "sonar.arff"
-    # no_of_folds = 10
-    # learning_rate = 0.1
-    # epochs = 100
-    data = readArff(trainingSet)
-    N.initializeNeuralNetObject(no_of_folds, learning_rate, epochs, data)
+    N.initializeNeuralNetObject(10, 0.1, 100, data, attributeList)
     samples = N.stratifiedSampler()
-    # print samples
     i = 0
-    prediction_list=[0]*len(data)
+    classificationSet = list()
     while(i<len(samples)):
         if(i==0):
-            if(len(samples)==1):
-                subSample = [samples[0]]
-            else :
-                subSample = samples[1:len(samples)]
+            subSample = samples[1:len(samples)]
         else:
             subSample = samples[0:i-1]+samples[i+1:len(samples)]
         combinedSubSample=list()
         for s in subSample :
             combinedSubSample+=s
+        
+        random.shuffle(combinedSubSample)
         N.stochasticGradientDescent(combinedSubSample)
-        p = 0
         for d in samples[i]:
             classification = N.computeOutputFromNetwork(d)
-            prediction_list[N.index_info[i][p]]= classification
-            p+=1
-        p = 0
+            classificationSet.append([classification, d[-1]])
+        #print correct
         i+=1
         N.setWeightsAndBiases(len(attributeList)-1)
-    wrongCount = 0
-    correctCount = 0
-    z = 0
-    for prediction in prediction_list :
-        foldNo = int(N.fold_info[z])+1
-        sno = z+1
-        print sno ,
-        print "Fold number: "+ str(foldNo),
-        print " Predicted Class: ",
-        if(prediction>0.5):
-            print attributeList[-1].values[-1],
-            predictedClass = attributeList[-1].values[-1]
+    sortedClassificationList = sorted(classificationSet, key=itemgetter(0))
+    coordinateListTPR = list()
+    coordinateListFPR = list()
+    threshold = 0
+    tp = 0
+    fp = 0
+    last_tp = 0
+    m = 1
+    num_pos = 0
+    num_neg = 0
+    for d in data : 
+        if(attributeList[-1].values[-1*d[-1]]==attributeList[-1].values[-1]):
+            num_pos+=1
+        else : 
+            num_neg+=1
+    sortedClassificationList = list(reversed(sortedClassificationList))
+    print sortedClassificationList
+    if(sortedClassificationList[0][1]==1):
+        tp+=1
+    while(m<len(sortedClassificationList)):
+        if(sortedClassificationList[m][0]!=sortedClassificationList[m-1][0] and sortedClassificationList[m][1]==0 and tp>last_tp):
+            fpr = float(fp)/num_neg
+            tpr = float(tp)/num_pos
+            coordinateListTPR.append(tpr)
+            coordinateListFPR.append(fpr)
+            last_tp = tp
+        if (sortedClassificationList[m][1] == 1):
+            tp+=1
         else :
-            print attributeList[-1].values[0],
-            predictedClass = attributeList[-1].values[0]
-        print " Actual Class: "+attributeList[-1].values[-1*data[z][-1]],
-        if(predictedClass is attributeList[-1].values[-1*data[z][-1]]):
-            correctCount+=1
-        else :
-            wrongCount+=1
-        print " Confidence: "+str(prediction)
-        z+=1
-    accuracy = float(correctCount)/(correctCount+wrongCount)*100
-    print accuracy
+            fp+=1
+        m+=1
+    fpr = float(fp)/num_neg
+    tpr = float(tp)/num_pos
+    coordinateListFPR.append(fpr)
+    coordinateListTPR.append(tpr)
+    f = open("tpr_algo_list","w")
+    f.write(str(coordinateListTPR))
+    f = open("fpr_algo_list","w")
+    f.write(str(coordinateListFPR))
+    step = 0.1
+    true_positive=0
+    false_positive=0
+
+    tpr_fpr_list=list()
+    tpr_list = list()
+    fpr_list = list()
+    while(threshold<=1):
+        for c in classificationSet:
+            if(c[0]>=threshold):
+                prediction = 1
+                if(prediction==c[1]):
+                    true_positive+=1
+                else : 
+                    false_positive+=1
+            else : 
+                prediction = 0
+        tpr = float(true_positive)/num_pos
+        fpr = float(false_positive)/num_neg
+        tpr_list.append(tpr)
+        fpr_list.append(fpr)
+        tpr_fpr_list.append([tpr,fpr])
+        true_positive=0
+        false_positive=0
+        threshold+=step
+    print "****************************"
+    file = open("tpr_fpr","w")
+    file.write(unicode(str(tpr_fpr_list)))
+    file = open("tpr_list", "w")
+    file.write(unicode(str(tpr_list)))
+    file = open("fpr_list","w")
+    file.write(unicode(str(fpr_list)))
 
 main()
         
